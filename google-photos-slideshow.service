@@ -1,0 +1,22 @@
+[Unit]
+Description=Google Photos Slideshow
+After=network-online.target graphical-session.target
+Wants=network-online.target
+Requires=graphical-session.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/google-photos-slideshow
+Environment=DISPLAY=:0
+Environment=PULSE_RUNTIME_PATH=/run/user/1000/pulse
+ExecStartPre=/bin/sleep 10
+ExecStart=/home/pi/google-photos-slideshow/venv/bin/python /home/pi/google-photos-slideshow/main.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=graphical-session.target
