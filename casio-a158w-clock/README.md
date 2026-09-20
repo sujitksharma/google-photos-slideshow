@@ -1,27 +1,31 @@
-# Casio A-158W Wall Clock
+# LCD Wall Clock (Casio-style)
 
-A landscape, always-on Android clock styled after the Casio A-158W digital
-watch (black resin case, gold trim, greenish LCD, seven-segment time with a
-dot-matrix day/date row), meant to turn a spare **Fire HD 8 (7th Gen)** into a
-wall clock.
+A landscape, always-on, full-screen Android clock styled after a digital
+watch's LCD display (greenish-grey panel, seven-segment time, dot-matrix
+day/date row) — no watch case or bezel, just a big, room-readable clock
+face — meant to turn a spare **Fire HD 8 (7th Gen)** into a wall clock.
 
 ![preview](docs/preview.png)
 
+An earlier iteration recreated the full Casio A-158W watch case (bezel,
+buttons, gold branding); that design is still in git history
+(`git log --oneline -- casio-a158w-clock`) if you'd rather use it, but the
+case chrome eats screen space and isn't readable at wall-clock distance, so
+the current version keeps just the LCD segment look and drops the case.
+
 ## What it does
 
-- Draws the watch face with Canvas (no images), scaled to fill the screen
-  in landscape while keeping the watch's proportions.
+- Draws the face with Canvas (no images), sized dynamically to the actual
+  screen so it fills the display edge-to-edge on any resolution.
 - Updates every second, aligned to the system clock.
 - Keeps the screen on and hides the status/navigation bars for a clean,
   kiosk-like look.
-- Tap the screen to toggle 12h/24h (the choice is remembered).
+- Tap the screen to toggle 12h/24h (the choice is remembered; a small "PM"
+  indicator appears in 12h mode when applicable).
 - Relaunches itself automatically after the tablet reboots (handy for a
   wall-mounted device that loses power occasionally).
 - Can optionally be set as the tablet's Home app, so pressing Home always
   returns to the clock.
-
-There's no watch-face animation for the alarm/chrono icons, world time, etc.
-— it's a clock, not a full watch emulator.
 
 ## Building the APK
 
@@ -63,7 +67,7 @@ Fire OS doesn't ship the Play Store, so you sideload the APK:
 
 ## Setting it up as a wall clock
 
-1. Launch **Casio A-158W Clock** once from the app drawer.
+1. Launch the clock app once from the app drawer.
 2. Go to **Settings → Display → Sleep** and set it to the longest option
    (or "Never", if available) — `FLAG_KEEP_SCREEN_ON` keeps the screen on
    while the app is in the foreground, but the tablet can still lock itself
@@ -81,7 +85,7 @@ Fire OS doesn't ship the Play Store, so you sideload the APK:
 casio-a158w-clock/
   app/src/main/java/com/skharma/casioclock/
     MainActivity.kt          full-screen host: keep-awake, immersive mode, tap-to-toggle 12/24h
-    CasioWatchFaceView.kt    all the drawing: case, LCD, seven-segment digits, dot-matrix day/date
+    CasioWatchFaceView.kt    all the drawing: LCD background, seven-segment digits, dot-matrix day/date
     BootReceiver.kt          relaunches the clock after a reboot
   app/src/main/res/          strings, colors, theme, launcher icon
 ```

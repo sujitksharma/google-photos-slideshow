@@ -6,19 +6,18 @@ import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
-import android.graphics.RectF
+import android.graphics.RadialGradient
 import android.graphics.Shader
-import android.graphics.Typeface
 import android.util.AttributeSet
 import android.view.View
 import java.util.Calendar
+import kotlin.math.max
 
 /**
- * Draws a face styled after the Casio A-158W digital watch: black resin case with
- * gold trim, a greenish-grey LCD panel, seven-segment time, and a dot-matrix
- * day/date row. Everything is laid out in a fixed 1600x1200 design space and
- * scaled to fit the view so the proportions match the real watch regardless
- * of screen size.
+ * A full-screen digital "LCD" clock face: big seven-segment HH:MM with
+ * smaller seconds, and a dot-matrix day/date row, styled after a digital
+ * watch display but scaled up and stripped of the watch case so it reads
+ * clearly from across a room.
  */
 class CasioWatchFaceView @JvmOverloads constructor(
     context: Context,
@@ -32,10 +31,7 @@ class CasioWatchFaceView @JvmOverloads constructor(
         }
 
     companion object {
-        private const val DESIGN_W = 1600f
-        private const val DESIGN_H = 1200f
-
-        private val DAY_NAMES = arrayOf("SU", "MO", "TU", "WE", "TH", "FR", "SA")
+        private val DAY_NAMES = arrayOf("SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT")
 
         // 3x5 dot-matrix font, one row of 3 chars each, '#' = lit.
         private val FONT: Map<Char, Array<String>> = mapOf(
@@ -99,21 +95,11 @@ class CasioWatchFaceView @JvmOverloads constructor(
         )
     }
 
-    private val caseColor1 = Color.parseColor("#232323")
-    private val caseColor2 = Color.parseColor("#0A0A0A")
-    private val caseBorder = Color.parseColor("#3A3A3A")
-    private val strapColor = Color.parseColor("#151515")
-    private val buttonColor = Color.parseColor("#2C2C2C")
-    private val gold = Color.parseColor("#C9A93E")
-    private val grayText = Color.parseColor("#9A9A9A")
-    private val lcdBorder = Color.parseColor("#333C37")
-    private val lcdTop = Color.parseColor("#C5D2CC")
-    private val lcdBottom = Color.parseColor("#AAB8B0")
-    private val lcdOn = Color.parseColor("#212B2E")
+    private val lcdTop = Color.parseColor("#C7D4CE")
+    private val lcdBottom = Color.parseColor("#A6B5AD")
+    private val lcdOn = Color.parseColor("#202B27")
 
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
-    private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
-    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val segStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeCap = Paint.Cap.ROUND
@@ -130,157 +116,79 @@ class CasioWatchFaceView @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        canvas.drawColor(Color.BLACK)
+        val w = width.toFloat()
+        val h = height.toFloat()
+        if (w <= 0f || h <= 0f) return
 
-        val scale = minOf(width / DESIGN_W, height / DESIGN_H)
-        val dx = (width - DESIGN_W * scale) / 2f
-        val dy = (height - DESIGN_H * scale) / 2f
+        // full-bleed LCD background
+        fillPaint.shader = LinearGradient(0f, 0f, w, h, lcdTop, lcdBottom, Shader.TileMode.CLAMP)
+        canvas.drawRect(0f, 0f, w, h, fillPaint)
 
-        canvas.save()
-        canvas.translate(dx, dy)
-        canvas.scale(scale, scale)
-        drawFace(canvas)
-        canvas.restore()
-    }
-
-    private fun drawFace(canvas: Canvas) {
-        val caseW = 1340f
-        val caseH = 940f
-        val caseX = (DESIGN_W - caseW) / 2f
-        val caseY = (DESIGN_H - caseH) / 2f
-
-        // strap lugs (top & bottom)
-        fillPaint.shader = null
-        fillPaint.color = strapColor
-        drawRoundRect(canvas, caseX + caseW * 0.34f, caseY - 60f, caseW * 0.32f, 80f, 18f)
-        drawRoundRect(canvas, caseX + caseW * 0.34f, caseY + caseH - 20f, caseW * 0.32f, 80f, 18f)
-
-        // case body with a subtle metallic-plastic gradient
-        fillPaint.shader = LinearGradient(
-            caseX, caseY, caseX + caseW, caseY + caseH,
-            caseColor1, caseColor2, Shader.TileMode.CLAMP
+        // soft vignette for depth
+        fillPaint.shader = RadialGradient(
+            w / 2f, h / 2f, max(w, h) * 0.75f,
+            intArrayOf(Color.argb(0, 0, 0, 0), Color.argb(45, 0, 0, 0)),
+            floatArrayOf(0f, 1f), Shader.TileMode.CLAMP
         )
-        val caseRect = RectF(caseX, caseY, caseX + caseW, caseY + caseH)
-        canvas.drawRoundRect(caseRect, 70f, 70f, fillPaint)
-        fillPaint.shader = null
-
-        strokePaint.color = caseBorder
-        strokePaint.strokeWidth = 4f
-        canvas.drawRoundRect(
-            RectF(caseX + 8f, caseY + 8f, caseX + caseW - 8f, caseY + caseH - 8f),
-            62f, 62f, strokePaint
-        )
-
-        // side buttons
-        fillPaint.color = buttonColor
-        val bw = 46f
-        val bh = 30f
-        drawRoundRect(canvas, caseX - bw + 10f, caseY + caseH * 0.18f, bw, bh, 8f)
-        drawRoundRect(canvas, caseX - bw + 10f, caseY + caseH * 0.70f, bw, bh, 8f)
-        drawRoundRect(canvas, caseX + caseW - 10f, caseY + caseH * 0.18f, bw, bh, 8f)
-        drawRoundRect(canvas, caseX + caseW - 10f, caseY + caseH * 0.70f, bw, bh, 8f)
-
-        // ---- brand text ----
-        textPaint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
-        textPaint.color = gold
-        textPaint.textSize = 46f
-        canvas.drawText("CASIO", caseX + 60f, caseY + 78f, textPaint)
-
-        textPaint.textSize = 30f
-        val alarmChrono = "ALARM CHRONO"
-        canvas.drawText(alarmChrono, caseX + caseW - 60f - textPaint.measureText(alarmChrono), caseY + 60f, textPaint)
-
-        textPaint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
-        textPaint.textSize = 20f
-        textPaint.color = Color.WHITE
-        val lithium = "Lithium"
-        canvas.drawText(lithium, caseX + caseW - 60f - textPaint.measureText(lithium), caseY + 92f, textPaint)
-
-        textPaint.color = grayText
-        textPaint.textSize = 16f
-        canvas.drawText("LIGHT/LAP-RESET", caseX + 40f, caseY + 112f, textPaint)
-        canvas.drawText("MODE", caseX + 40f, caseY + 136f, textPaint)
-        val ss12 = "START·STOP/12·24H"
-        canvas.drawText(ss12, caseX + caseW - 40f - textPaint.measureText(ss12), caseY + 118f, textPaint)
-
-        // ---- LCD panel ----
-        val lcdW = caseW * 0.66f
-        val lcdH = caseH * 0.66f
-        val lcdX = caseX + (caseW - lcdW) / 2f
-        val lcdY = caseY + caseH * 0.16f
-
-        fillPaint.shader = LinearGradient(
-            lcdX, lcdY, lcdX + lcdW, lcdY + lcdH, lcdTop, lcdBottom, Shader.TileMode.CLAMP
-        )
-        val lcdRect = RectF(lcdX, lcdY, lcdX + lcdW, lcdY + lcdH)
-        canvas.drawRoundRect(lcdRect, 20f, 20f, fillPaint)
-        fillPaint.shader = null
-
-        strokePaint.color = lcdBorder
-        strokePaint.strokeWidth = 4f
-        canvas.drawRoundRect(lcdRect, 20f, 20f, strokePaint)
+        canvas.drawRect(0f, 0f, w, h, fillPaint)
 
         // glass highlight streak
+        fillPaint.shader = null
         fillPaint.color = Color.WHITE
-        fillPaint.alpha = 38
+        fillPaint.alpha = 30
         val streak = Path().apply {
-            moveTo(lcdX + 15f, lcdY + 8f)
-            lineTo(lcdX + 70f, lcdY + 8f)
-            lineTo(lcdX + 25f, lcdY + lcdH - 8f)
-            lineTo(lcdX - 20f, lcdY + lcdH - 8f)
+            moveTo(w * 0.02f, 0f)
+            lineTo(w * 0.16f, 0f)
+            lineTo(w * 0.05f, h)
+            lineTo(-w * 0.05f, h)
             close()
         }
         canvas.drawPath(streak, fillPaint)
         fillPaint.alpha = 255
 
-        val pad = lcdW * 0.055f
-        val dotSize = lcdW * 0.026f
+        val pad = minOf(w, h) * 0.06f
+        val dotSize = w * 0.017f
 
-        // ---- top row: chime icon, PM, day, date ----
-        val topRowY = lcdY + pad * 0.7f
-        val iconH = dotSize * 4.6f
-        drawChimeIcon(canvas, lcdX + pad, topRowY + (dotSize * 5f - iconH), iconH)
-
-        val pmX = lcdX + pad + iconH * 2.3f
+        // ---- top row: day, optional PM, date ----
+        val topRowY = pad
         val hour24 = calendar.get(Calendar.HOUR_OF_DAY)
-        if (!use24Hour && hour24 >= 12) {
-            drawDotText(canvas, "PM", pmX, topRowY, dotSize)
-        }
-
-        val dateStr = calendar.get(Calendar.DAY_OF_MONTH).toString()
-        val dateW = textWidth(dateStr, dotSize)
-        val dateX = lcdX + lcdW - pad - dateW
-        drawDotText(canvas, dateStr, dateX, topRowY, dotSize)
-
         val dayStr = DAY_NAMES[calendar.get(Calendar.DAY_OF_WEEK) - 1]
-        val dayW = textWidth(dayStr, dotSize)
-        val dayX = dateX - dotSize * 4.5f - dayW
+
+        var dayX = pad
+        if (!use24Hour && hour24 >= 12) {
+            drawDotText(canvas, "PM", dayX, topRowY, dotSize)
+            dayX += textWidth("PM", dotSize) + dotSize * 3f
+        }
         drawDotText(canvas, dayStr, dayX, topRowY, dotSize)
 
+        val dateStr = "${calendar.get(Calendar.MONTH) + 1}-${calendar.get(Calendar.DAY_OF_MONTH)}"
+        val dateW = textWidth(dateStr, dotSize)
+        drawDotText(canvas, dateStr, w - pad - dateW, topRowY, dotSize)
+
         // ---- main row: HH:MM big + SS smaller ----
-        val topRowH = dotSize * 6.2f
-        val mainAreaY = lcdY + topRowH + pad * 0.3f
-        val mainAreaH = lcdH - topRowH - pad * 1.4f
-        val availW = lcdW - pad * 2f
+        val topRowH = dotSize * 6.5f
+        val mainAreaY = topRowH + pad * 0.6f
+        val mainAreaH = h - mainAreaY - pad
+        val availW = w - pad * 2f
 
         val thickness = 0.20f
         val secThickness = 0.22f
         val wRatio = 0.50f
         val slantRatio = 0.12f
-        val secHRatio = 0.46f
-        val gapD = wRatio * 0.30f
-        val gapC = wRatio * 0.26f
-        val colonWr = wRatio * 0.20f
-        val gapS = wRatio * 0.55f
-        val gapSs = wRatio * secHRatio * 0.30f
+        val secHRatio = 0.44f
+        val gapD = wRatio * 0.28f
+        val gapC = wRatio * 0.24f
+        val colonWr = wRatio * 0.18f
+        val gapS = wRatio * 0.5f
+        val gapSs = wRatio * secHRatio * 0.28f
 
         val unitWidth = 4 * wRatio + 2 * gapD + 2 * gapC + colonWr + gapS + 2 * (wRatio * secHRatio) + gapSs + slantRatio
-        val digitH = minOf(availW / unitWidth, mainAreaH / 1.02f)
+        val digitH = minOf(availW / unitWidth, mainAreaH * 0.98f)
         val digitW = digitH * wRatio
         val slant = digitH * slantRatio
         val gap = digitW * (gapD / wRatio)
         val totalW = digitH * unitWidth
-        var mx = lcdX + pad + (availW - totalW) / 2f
+        var mx = pad + (availW - totalW) / 2f
         val mainY = mainAreaY + (mainAreaH - digitH) / 2f
 
         val hourVal = if (use24Hour) hour24 else {
@@ -290,7 +198,7 @@ class CasioWatchFaceView @JvmOverloads constructor(
         val hourStr = if (use24Hour) {
             "%02d".format(hourVal)
         } else {
-            if (hourVal < 10) " ${hourVal}" else "$hourVal"
+            if (hourVal < 10) " $hourVal" else "$hourVal"
         }
         val minuteStr = "%02d".format(calendar.get(Calendar.MINUTE))
         val secondStr = "%02d".format(calendar.get(Calendar.SECOND))
@@ -314,42 +222,19 @@ class CasioWatchFaceView @JvmOverloads constructor(
         val secW = secH * wRatio
         val secSlant = secH * slantRatio
         val secGap = digitH * gapSs
-        val secY = mainY + (digitH - secH) * 0.62f
+        val secY = mainY + (digitH - secH) * 0.60f
         drawDigit(canvas, secondStr[0], mx, secY, secW, secH, secSlant, secThickness)
         mx += secW + secGap
         drawDigit(canvas, secondStr[1], mx, secY, secW, secH, secSlant, secThickness)
-
-        // ---- lower case text ----
-        textPaint.typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
-        textPaint.color = gold
-        textPaint.textSize = 26f
-        canvas.drawText("WATER RESIST", caseX + 60f, caseY + caseH - 55f, textPaint)
-
-        textPaint.typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD_ITALIC)
-        textPaint.textSize = 36f
-        val wr = "WR"
-        canvas.drawText(wr, caseX + caseW - 60f - textPaint.measureText(wr), caseY + caseH - 45f, textPaint)
     }
 
     private fun drawRoundRect(canvas: Canvas, x: Float, y: Float, w: Float, h: Float, r: Float) {
-        canvas.drawRoundRect(RectF(x, y, x + w, y + h), r, r, fillPaint)
-    }
-
-    private fun drawChimeIcon(canvas: Canvas, x: Float, y: Float, h: Float) {
-        val bw = h * 0.16f
-        val gap = h * 0.10f
-        val heights = floatArrayOf(0.35f, 0.55f, 0.75f, 1.0f)
-        var cx = x
-        fillPaint.color = lcdOn
-        for (hr in heights) {
-            val bh = h * hr
-            drawRoundRect(canvas, cx, y + (h - bh), bw, bh, bw * 0.3f)
-            cx += bw + gap
-        }
+        canvas.drawRoundRect(x, y, x + w, y + h, r, r, fillPaint)
     }
 
     private fun drawDotText(canvas: Canvas, text: String, x: Float, y: Float, dot: Float) {
         var cx = x
+        fillPaint.shader = null
         fillPaint.color = lcdOn
         for (c in text) {
             val glyph = FONT[c.uppercaseChar()] ?: FONT[' ']!!
