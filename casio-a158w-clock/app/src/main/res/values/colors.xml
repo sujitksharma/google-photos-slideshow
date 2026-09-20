@@ -1,0 +1,5 @@
+<resources>
+    <color name="black">#000000</color>
+    <color name="case_light">#C9CCCF</color>
+    <color name="case_dark">#8B8E92</color>
+</resources>
