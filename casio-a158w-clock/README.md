@@ -1,27 +1,33 @@
-# LCD Wall Clock (Casio-style)
+# Nixie Wall Clock
 
-A landscape, always-on, full-screen Android clock styled after a digital
-watch's LCD display (greenish-grey panel, seven-segment time, dot-matrix
-day/date row) — no watch case or bezel, just a big, room-readable clock
-face — meant to turn a spare **Fire HD 8 (7th Gen)** into a wall clock.
+A landscape, always-on, full-screen Android clock styled after a Nixie tube
+display: six glowing amber glass tubes (HH:MM:SS) with faint "unlit" ghost
+numerals behind the lit digit, a wire mesh anode, and a metal base/pins
+under each tube — meant to turn a spare **Fire HD 8 (7th Gen)** into a wall
+clock.
 
 ![preview](docs/preview.png)
 
-An earlier iteration recreated the full Casio A-158W watch case (bezel,
-buttons, gold branding); that design is still in git history
-(`git log --oneline -- casio-a158w-clock`) if you'd rather use it, but the
-case chrome eats screen space and isn't readable at wall-clock distance, so
-the current version keeps just the LCD segment look and drops the case.
+Earlier iterations recreated a Casio A-158W watch case, then a plain
+seven-segment LCD face; both are still in git history
+(`git log --oneline -- casio-a158w-clock`) if you'd rather use one of
+those, but this Nixie look isn't Casio-inspired at all and is the current
+default.
 
 ## What it does
 
-- Draws the face with Canvas (no images), sized dynamically to the actual
+- Draws the face with Canvas (no images): each tube's glass, mesh, glow,
+  and glyph outline is vector geometry, sized dynamically to the actual
   screen so it fills the display edge-to-edge on any resolution.
+- The glowing digit is the real numeral outline (via `Paint.getTextPath`),
+  not a seven-segment font — drawn several times at increasing scale and
+  decreasing opacity for the glow halo, plus faint stroked "ghost" numerals
+  behind it to suggest the other unlit wire digits stacked in the tube.
 - Updates every second, aligned to the system clock.
 - Keeps the screen on and hides the status/navigation bars for a clean,
   kiosk-like look.
-- Tap the screen to toggle 12h/24h (the choice is remembered; a small "PM"
-  indicator appears in 12h mode when applicable).
+- Tap the screen to toggle 12h/24h (the choice is remembered; the hour
+  tube just goes unlit for a suppressed leading zero in 12h mode).
 - Relaunches itself automatically after the tablet reboots (handy for a
   wall-mounted device that loses power occasionally).
 - Can optionally be set as the tablet's Home app, so pressing Home always
@@ -45,7 +51,11 @@ build tooling, but the app itself just needs a normal Android toolchain:
 > downloaded here to produce a signed APK directly. Everything else
 > (Gradle wrapper, all source, resources) is in place — building just
 > needs to happen somewhere with normal internet access, e.g. your own
-> machine or Android Studio.
+> machine or Android Studio. The digit glow/layout math was validated in a
+> standalone Java prototype (see the preview image) before being ported to
+> Android's `Canvas`/`Paint`, but I couldn't compile or run the actual APK
+> here — give the clock a look once it's built, in case the `Typeface.MONOSPACE`
+> fallback renders the numerals a bit differently than the preview.
 
 ## Installing on the Fire HD 8
 
@@ -85,7 +95,7 @@ Fire OS doesn't ship the Play Store, so you sideload the APK:
 casio-a158w-clock/
   app/src/main/java/com/skharma/casioclock/
     MainActivity.kt          full-screen host: keep-awake, immersive mode, tap-to-toggle 12/24h
-    CasioWatchFaceView.kt    all the drawing: LCD background, seven-segment digits, dot-matrix day/date
+    NixieClockView.kt        all the drawing: glass tubes, glow/ghost digits, mesh anode, base/pins
     BootReceiver.kt          relaunches the clock after a reboot
   app/src/main/res/          strings, colors, theme, launcher icon
 ```

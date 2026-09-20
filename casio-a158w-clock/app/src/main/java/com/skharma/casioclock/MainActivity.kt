@@ -12,13 +12,13 @@ import android.view.View
 import android.view.WindowManager
 
 /**
- * Full-screen "wall clock" host for [CasioWatchFaceView]. Keeps the screen on,
+ * Full-screen "wall clock" host for [NixieClockView]. Keeps the screen on,
  * hides the system bars, and re-hides them whenever the user pokes the edges
  * of the screen to peek at the system UI.
  */
 class MainActivity : Activity() {
 
-    private lateinit var watchFace: CasioWatchFaceView
+    private lateinit var watchFace: NixieClockView
     private lateinit var prefs: SharedPreferences
     private val handler = Handler(Looper.getMainLooper())
 
@@ -37,7 +37,7 @@ class MainActivity : Activity() {
 
         prefs = getSharedPreferences("casio_clock", Context.MODE_PRIVATE)
 
-        watchFace = CasioWatchFaceView(this)
+        watchFace = NixieClockView(this)
         watchFace.use24Hour = prefs.getBoolean("use24Hour", true)
         watchFace.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_UP) {
